@@ -6,11 +6,19 @@
 
 #include<stdio.h>
 #include<stdlib.h>
+#include<stdint.h>
 #include<string.h>
+#include<nerror.h>
 
-int getupperrange(char *args);
+#define OPTION_IGNORE 	1
+#define OPTION_ISOLATE 	2
+#define OPTION_LINES	4
+#define OPTION_RANGE	8
+#define OPTION_SAVE	16
 
-int getlowerrange(char *args);
+int getleftvalue(char *args);
+
+int getrightvalue(char *args);
 
 int main(int argc, char *argv[])
 {
@@ -18,12 +26,8 @@ int main(int argc, char *argv[])
 	 * has been invoked. If yes, the help menu is displayed. If no,
 	 * we get an error that is sent to standard error */
 	if (argc < 3) {
-		/* If not used... */
-		if (argc == 1) {
-			fprintf(stderr, "Uusage: search [OPTION]... TERM FILE\nTry 'search --help' for more information\n");
-			return 1;
-		}
-		/* If used, we get our helpful hints */
+		FAIL_IF_R(argc == 1, 1, stderr, "Usage: search [OPTION]... TERM FILE\nTry 'search --help' for more information\n");
+		
 		if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
 			puts("Search help:\n\tUSAGE: search [OPTION]... TERM FILE\n");
 			puts("\t-h, --help\t\tShow this help dialog\n");
@@ -46,11 +50,7 @@ int main(int argc, char *argv[])
 
 	/* These are the variables with which we will keep track of what
 	 * options have been specified */
-	int iflag = 0;
-	int Iflag = 0;
-	int lflag = 0;
-	int rflag = 0;
-	int sflag = 0;
+	uint8_t option_field = 0;
 	int saveposition = 0;
 	int rangeposition = 0;
 	
@@ -59,36 +59,19 @@ int main(int argc, char *argv[])
 	for (int flagcheck = 1; flagcheck < argc-2; flagcheck++) {
 		/* If -l or --lines is specified, lflag is given the value of 1 */
 		if (strcmp(argv[flagcheck], "-i") == 0 || strcmp(argv[flagcheck], "--ignore-case") == 0) {
+			FAIL_IF_R(option_field & OPTION_IGNORE, 1, stderr, "ERROR: You can only employ a flag once\n");
 			puts("ignoring cases is not yet implemented");
-			if (lflag == 1) {
-				fprintf(stderr, "\nERROR: You can only employ a flag once\n\n");
-				return 1;
-			}
-			else {
-				iflag = 1;
-			}
+			option_field ^= OPTION_IGNORE;
 		}
 
 		else if (strcmp(argv[flagcheck], "-I") == 0 || strcmp(argv[flagcheck], "--isolate") == 0) {
-			if (Iflag == 1) {
-				fprintf(stderr, "\nERROR: You can only employ a flag once\n\n");
-				return 1;
-			}
-			else {
-				Iflag = 1;
-			}
+			FAIL_IF_R(option_field & OPTION_ISOLATE, 1, stderr, "ERROR: You can only employ a flag once\n");
+			option_field ^= OPTION_ISOLATE;
 		}
 
 		else if (strcmp(argv[flagcheck], "-l") == 0 || strcmp(argv[flagcheck], "--lines") == 0) {
-			if (lflag == 1) {
-				/* If -l or --lines has already been specified, we print an error.
-				 * Afterall, there is no use in writing out an option twice */
-				fprintf(stderr, "\nERROR: You can only employ a flag once\n\n");
-				return 1;
-			}
-			else {
-				lflag = 1;
-			}
+			FAIL_IF_R(option_field & OPTION_LINES, 1, stderr, "ERROR: You can only employ a flag once\n");
+			option_field ^= OPTION_LINES;
 		}
 		/* if -h or --help is specified, we let the user know that we would rather
 		 * the -h and --help options be specified without any other flags */
@@ -99,62 +82,37 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 		else if (strcmp(argv[flagcheck], "-s") == 0 || strcmp(argv[flagcheck], "--save") == 0) {
-			if (sflag == 1) {
-				fprintf(stderr, "\nERROR: You can only employ a flag once\n\n");
-				return 1;
-			}
-			else if (flagcheck + 1 == argc - 2) {
-				fprintf(stderr, "ERROR: Missing save file name\n");
-				return 1;
-			}
-			else {
-				saveposition = flagcheck + 1;
-				sflag = 1;
-				flagcheck++;
-			}
+			FAIL_IF_R(option_field & OPTION_SAVE, 1, stderr, "ERROR: You can only employ a flag once\n");
+			FAIL_IF_R(flagcheck + 1 == argc - 2, 1, stderr, "ERROR: File not specified\n");
+			flagcheck++;
+			saveposition = flagcheck;
+			option_field ^= OPTION_SAVE;
 		}
 		else if (strcmp(argv[flagcheck], "-r") == 0 || strcmp(argv[flagcheck], "--range") == 0) {
-			if (rflag == 1) {
-				fprintf(stderr, "\nERROR: You can only employ a flag once\n\n");
-				return 1;
-			}
-			else if (flagcheck + 1 == argc - 2) {
-				fprintf(stderr, "ERROR: Range not specified\n");
-				return 1;
-			}
-			else {
-				rflag = 1;
-				rangeposition = flagcheck + 1;
-				flagcheck++;
-			}
+			FAIL_IF_R(option_field & OPTION_RANGE, 1, stderr, "ERROR: You can only employ a flag once\n");
+			FAIL_IF_R(flagcheck + 1 == argc - 2, 1, stderr, "ERROR: Range not specified\n");
+			flagcheck++;
+			rangeposition = flagcheck;
+			option_field ^= OPTION_RANGE;
 		}
 		else {
-			/* If a flag is specified that we do not recognise, we will print
-			 * an error. */
 			fprintf(stderr, "\nERROR: \"%s\" is not a valid option\n\n", argv[flagcheck]);
 			return 1;
 		}
 	}
 
 	/* Open file. If the file pointer is NULL, we return an error */
-	FILE *myfile;
-	myfile = fopen(argv[argc-1], "r");
-	if (myfile == NULL) {
-		fprintf(stderr, "Could not open file\n");
-		return 1;
-	}
+	FILE *searchfile = searchfile = fopen(argv[argc-1], "r");
+	FAIL_IF_R(searchfile == NULL, 1, stderr, "search: Could not open search file\n");
 
 	FILE *savefile;
-	if (sflag == 1) {
+	if (option_field & OPTION_SAVE) {
 		savefile = fopen(argv[saveposition], "w");
-		if (savefile == NULL) {
-			fprintf(stderr, "Error opening save file\n");
-			return 1;
-		}
+		FAIL_IF_R(savefile == NULL, 1, stderr, "search: Could not open save file\n");
 	}
 
-	if (Iflag == 1) {
-		puts("Only using exact matches");
+	if (option_field & OPTION_ISOLATE) {
+		puts("Only using isolated matches");
 	}
 
 	/* searchsize is set to the string length of the search term which is located
@@ -163,26 +121,21 @@ int main(int argc, char *argv[])
 	/* We will use searchword for our comparisons */
 	char searchword[128];
 	strcpy(searchword, argv[argc-2]);
-	/* We use linebuff to read the desired file line by line. 1024 bytes is probably overkill,
-	 * but you just never know when you might come across a crazy long line in a code file
-	 * or something */
 	char linebuff[1024];
-	/* linecount keeps track of what line we are up to so we can
-	 * print it out with a search result */
 	int linecount = 1;
 
-	int upperrange = getupperrange(argv[rangeposition]);
-	int lowerrange = getlowerrange(argv[rangeposition]);
+	/* Get the left and right values from range and sort into the correct variables */
+	int lowerrange = getleftvalue(argv[rangeposition]);
+	int upperrange = getrightvalue(argv[rangeposition]);
 	if (upperrange < lowerrange) {
 		int intholder = upperrange;
 		upperrange = lowerrange;
 		lowerrange = intholder;
 	}
-
 	printf("Searching for \"%s\" in %s\n", argv[argc-2], argv[argc-1]);
 
 	/* Time to go through the file */
-	while (fgets(linebuff, 1024, myfile)) {
+	while (fgets(linebuff, 1024, searchfile)) {
 		/* After filling linebuff in the while loop, we use a for loop to go through linebuff
 		 * for comparison with our search term */
 		int counter;
@@ -193,11 +146,11 @@ int main(int argc, char *argv[])
 			 * is a null terminator*/
 			if (linebuff[counter] == searchword[0]) {
 				if (searchword[1] == '\0') {
-					if (Iflag == 1) {
+					if (option_field & OPTION_ISOLATE) {
 						if ((counter == 0 || linebuff[counter-1] == ' ') && (linebuff[counter+1] == ' ' || linebuff[counter+1] == '\n')) {
-							if (lflag == 1) {
-								if (sflag == 1) {
-									if (rflag == 1) {
+							if (option_field & OPTION_LINES) {
+								if (option_field & OPTION_SAVE) {
+									if (option_field & OPTION_RANGE) {
 										if (linecount >= lowerrange && linecount <= upperrange) {
 											fprintf(savefile, "LINE %d, POS %d: ", linecount, counter+1);
 										}
@@ -207,7 +160,7 @@ int main(int argc, char *argv[])
 									}
 								}
 								else {
-									if (rflag == 1) {
+									if (option_field & OPTION_RANGE) {
 										if (linecount >= lowerrange && linecount <= upperrange) {
 											printf("LINE %d, POS %d: ", linecount, counter+1);
 										}
@@ -217,8 +170,8 @@ int main(int argc, char *argv[])
 									}
 								}
 							}
-							if (sflag == 1) {
-								if (rflag == 1) {
+							if (option_field & OPTION_SAVE) {
+								if (option_field & OPTION_RANGE) {
 									if (linecount >= lowerrange && linecount <= upperrange) {
 										fprintf(savefile, "%s", linebuff);
 									}
@@ -228,7 +181,7 @@ int main(int argc, char *argv[])
 								}
 							}
 							else {
-								if (rflag == 1) {
+								if (option_field & OPTION_RANGE) {
 									if (linecount >= lowerrange && linecount <= upperrange) {
 										printf("%s", linebuff);
 									}
@@ -240,9 +193,9 @@ int main(int argc, char *argv[])
 						}
 					}
 					else {
-						if (lflag == 1) {
-							if (sflag == 1) {
-								if (rflag == 1) {
+						if (option_field & OPTION_LINES) {
+							if (option_field & OPTION_SAVE) {
+								if (option_field & OPTION_RANGE) {
 									if (linecount >= lowerrange && linecount <= upperrange) {
 										fprintf(savefile, "LINE %d, POS %d: ", linecount, counter+1);
 									}
@@ -252,7 +205,7 @@ int main(int argc, char *argv[])
 								}
 							}
 							else {
-								if (rflag == 1) {
+								if (option_field & OPTION_RANGE) {
 									if (linecount >= lowerrange && linecount <= upperrange) {
 										printf("LINE %d, POS %d: ", linecount, counter+1);
 									}
@@ -262,8 +215,8 @@ int main(int argc, char *argv[])
 								}
 							}
 						}
-						if (sflag == 1) {
-							if (rflag == 1) {
+						if (option_field & OPTION_SAVE) {
+							if (option_field & OPTION_RANGE) {
 								if (linecount >= lowerrange && linecount <= upperrange) {
 									fprintf(savefile, "%s", linebuff);
 								}
@@ -273,7 +226,7 @@ int main(int argc, char *argv[])
 							}
 						}
 						else {
-							if (rflag == 1) {
+							if (option_field & OPTION_RANGE) {
 								if (linecount >= lowerrange && linecount <= upperrange) {
 									printf("%s", linebuff);
 								}
@@ -294,11 +247,11 @@ int main(int argc, char *argv[])
 					for (int x = 1; x <= searchsize; x++) {
 						if (linebuff[counter+x] == searchword[x]) {
 							if (x == searchsize-1) {
-								if (Iflag == 1) {
+								if (option_field & OPTION_ISOLATE) {
 									if ((counter == 0 || linebuff[counter-1] == ' ') && (linebuff[counter+searchsize] == ' ' || linebuff[counter+searchsize] == '\n')) {
-										if (lflag == 1) {
-											if (sflag == 1) {
-												if (rflag == 1) {
+										if (option_field & OPTION_LINES) {
+											if (option_field & OPTION_SAVE) {
+												if (option_field & OPTION_RANGE) {
 													if (linecount >= lowerrange && linecount <= upperrange) {
 														fprintf(savefile, "LINE %d, POS %d: ", linecount, counter+1);
 													}
@@ -308,7 +261,7 @@ int main(int argc, char *argv[])
 												}
 											}
 											else {
-												if (rflag == 1) {
+												if (option_field & OPTION_RANGE) {
 													if (linecount >= lowerrange && linecount <= upperrange) {
 														printf("LINE %d, POS %d: ", linecount, counter+1);
 													}
@@ -318,8 +271,8 @@ int main(int argc, char *argv[])
 												}
 											}
 										}
-										if (sflag == 1) {
-											if (rflag == 1) {
+										if (option_field & OPTION_SAVE) {
+											if (option_field & OPTION_RANGE) {
 												if (linecount >= lowerrange && linecount <= upperrange) {
 													fprintf(savefile, "%s", linebuff);
 												}
@@ -329,7 +282,7 @@ int main(int argc, char *argv[])
 											}
 										}
 										else {
-											if (rflag == 1) {
+											if (option_field & OPTION_RANGE) {
 												if (linecount >= lowerrange && linecount <= upperrange) {
 													printf("%s", linebuff);
 												}
@@ -341,9 +294,9 @@ int main(int argc, char *argv[])
 									}
 								}
 								else {
-									if (lflag == 1) {
-										if (sflag == 1) {
-											if (rflag == 1) {
+									if (option_field & OPTION_LINES) {
+										if (option_field & OPTION_SAVE) {
+											if (option_field & OPTION_RANGE) {
 												if (linecount >= lowerrange && linecount <= upperrange) {
 													fprintf(savefile, "LINE %d, POS %d: ", linecount, counter+1);
 												}
@@ -353,7 +306,7 @@ int main(int argc, char *argv[])
 											}
 										}
 										else {
-											if (rflag == 1) {
+											if (option_field & OPTION_RANGE) {
 												if (linecount >= lowerrange && linecount <= upperrange) {
 													printf("LINE %d, POS %d: ", linecount, counter+1);
 												}
@@ -363,8 +316,8 @@ int main(int argc, char *argv[])
 											}
 										}
 									}
-									if (sflag == 1) {
-										if (rflag == 1) {
+									if (option_field & OPTION_SAVE) {
+										if (option_field & OPTION_RANGE) {
 											if (linecount >= lowerrange && linecount <= upperrange) {
 												fprintf(savefile, "%s", linebuff);
 											}
@@ -374,7 +327,7 @@ int main(int argc, char *argv[])
 										}
 									}
 									else {
-										if (rflag == 1) {
+										if (option_field & OPTION_RANGE) {
 											if (linecount >= lowerrange && linecount <= upperrange) {
 												printf("%s", linebuff);
 											}
@@ -403,8 +356,8 @@ int main(int argc, char *argv[])
 	}
 
 	/* Wrap things up */
-	fclose(myfile);
-	if (sflag == 1) {
+	fclose(searchfile);
+	if (option_field & OPTION_SAVE) {
 		printf("Results written to %s\n", argv[saveposition]);
 		fclose(savefile);
 	}
@@ -413,9 +366,9 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-int getlowerrange(char *args)
+int getleftvalue(char *args)
 {
-	int lowerrange;
+	int leftvalue;
 	char range[16];
 
 	for (int x = 0; x < strlen(args); x++) {
@@ -426,14 +379,14 @@ int getlowerrange(char *args)
 		range[x] = args[x];
 	}
 
-	lowerrange = atoi(range);
+	leftvalue = atoi(range);
 
-	return lowerrange;
+	return leftvalue;
 }
 
-int getupperrange(char *args)
+int getrightvalue(char *args)
 {
-	int upperrange;
+	int rightvalue;
 	char range[16];
 	int flip = 0;
 
@@ -448,7 +401,7 @@ int getupperrange(char *args)
 		}
 	}
 
-	upperrange = atoi(range);
+	rightvalue = atoi(range);
 
-	return upperrange;
+	return rightvalue;
 }
