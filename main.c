@@ -49,8 +49,8 @@ int main(int argc, char *argv[])
 	/* These are the variables with which we will keep track of what
 	 * options have been specified */
 	uint8_t option_field = 0;
-	int saveposition = 0;
-	int rangeposition = 0;
+	uint8_t saveposition = 0;
+	uint8_t rangeposition = 0;
 	
 	/* We will loop through argv from position 1 to the 3rd to last position.
 	 * That way we can keep track of what options have been used */
