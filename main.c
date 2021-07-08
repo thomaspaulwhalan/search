@@ -8,6 +8,8 @@
 #include<stdlib.h>
 #include<stdint.h>
 #include<string.h>
+
+#include<range.h>
 #include<nerror.h>
 
 #define OPTION_IGNORE 	1
@@ -15,10 +17,6 @@
 #define OPTION_LINES	4
 #define OPTION_RANGE	8
 #define OPTION_SAVE	16
-
-int getleftvalue(char *args);
-
-int getrightvalue(char *args);
 
 int main(int argc, char *argv[])
 {
@@ -42,7 +40,7 @@ int main(int argc, char *argv[])
 			return 0;
 		}
 		else {
-			fprintf(stderr, "Uusage: search [OPTION]... TERM FILE\nTry 'search --help' for more information\n");
+			fprintf(stderr, "USAGE: search [OPTION]... TERM FILE\nTry 'search --help' for more information\n");
 
 			return 1;
 		}
@@ -259,44 +257,4 @@ int main(int argc, char *argv[])
 	}
 
 	return 0;
-}
-
-int getleftvalue(char *args)
-{
-	int leftvalue;
-	char range[16];
-
-	for (int x = 0; x < strlen(args); x++) {
-		if (args[x] == '-') {
-			range[x] = '\0';
-			break;
-		}
-		range[x] = args[x];
-	}
-
-	leftvalue = atoi(range);
-
-	return leftvalue;
-}
-
-int getrightvalue(char *args)
-{
-	int rightvalue;
-	char range[16];
-	int flip = 0;
-
-	int y = 0;
-	for (int x = 0; x < strlen(args); x++) {
-		if (flip == 1) {
-			range[y] = args[x];
-			y++;
-		}
-		if (args[x] == '-') {
-			flip = 1;
-		}
-	}
-
-	rightvalue = atoi(range);
-
-	return rightvalue;
 }
