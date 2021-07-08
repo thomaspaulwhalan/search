@@ -101,18 +101,16 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	/* Open file. If the file pointer is NULL, we return an error */
 	FILE *searchfile = searchfile = fopen(argv[argc-1], "r");
 	FAIL_IF_R(searchfile == NULL, 1, stderr, "search: Could not open search file\n");
 
-	FILE *savefile;
+	FILE *file_stream;
 	if (option_field & OPTION_SAVE) {
-		savefile = fopen(argv[saveposition], "w");
-		FAIL_IF_R(savefile == NULL, 1, stderr, "search: Could not open save file\n");
+		file_stream = fopen(argv[saveposition], "w");
+		FAIL_IF_R(file_stream == NULL, 1, stderr, "search: Could not open save file\n");
 	}
-
-	if (option_field & OPTION_ISOLATE) {
-		puts("Only using isolated matches");
+	else {
+		file_stream = stdout;
 	}
 
 	/* searchsize is set to the string length of the search term which is located
@@ -134,106 +132,55 @@ int main(int argc, char *argv[])
 	}
 	printf("Searching for \"%s\" in %s\n", argv[argc-2], argv[argc-1]);
 
-	/* Time to go through the file */
 	while (fgets(linebuff, 1024, searchfile)) {
-		/* After filling linebuff in the while loop, we use a for loop to go through linebuff
-		 * for comparison with our search term */
 		int counter;
-		for(counter = 0; counter < strlen(linebuff); counter++) {
+		for (counter = 0; counter < strlen(linebuff); counter++) {
 			/* If the first letter of our search term matches a letter in linebuff,
 			 * We first check to see if our search term is a single letter or not.
 			 * This is accomplished by checking whether or not the next position
 			 * is a null terminator*/
-			if (linebuff[counter] == searchword[0]) {
+			if (linebuff[counter] == searchword[0]) { //change this to use strcmp. That way, I can take out a fair chunk of code
 				if (searchword[1] == '\0') {
 					if (option_field & OPTION_ISOLATE) {
 						if ((counter == 0 || linebuff[counter-1] == ' ') && (linebuff[counter+1] == ' ' || linebuff[counter+1] == '\n')) {
 							if (option_field & OPTION_LINES) {
-								if (option_field & OPTION_SAVE) {
-									if (option_field & OPTION_RANGE) {
-										if (linecount >= lowerrange && linecount <= upperrange) {
-											fprintf(savefile, "LINE %d, POS %d: ", linecount, counter+1);
-										}
-									}
-									else {
-										fprintf(savefile, "LINE %d, POS %d: ", linecount, counter+1);
-									}
-								}
-								else {
-									if (option_field & OPTION_RANGE) {
-										if (linecount >= lowerrange && linecount <= upperrange) {
-											printf("LINE %d, POS %d: ", linecount, counter+1);
-										}
-									}
-									else {
-										printf("LINE %d, POS %d: ", linecount, counter+1);
-									}
-								}
-							}
-							if (option_field & OPTION_SAVE) {
 								if (option_field & OPTION_RANGE) {
 									if (linecount >= lowerrange && linecount <= upperrange) {
-										fprintf(savefile, "%s", linebuff);
+										fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
 									}
 								}
 								else {
-									fprintf(savefile, "%s", linebuff);
+									fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
+								}
+						}
+							if (option_field & OPTION_RANGE) {
+								if (linecount >= lowerrange && linecount <= upperrange) {
+									fprintf(file_stream, "%s", linebuff);
 								}
 							}
 							else {
-								if (option_field & OPTION_RANGE) {
-									if (linecount >= lowerrange && linecount <= upperrange) {
-										printf("%s", linebuff);
-									}
-								}
-								else {
-									printf("%s", linebuff);
-								}
+								fprintf(file_stream, "%s", linebuff);
 							}
 						}
 					}
 					else {
 						if (option_field & OPTION_LINES) {
-							if (option_field & OPTION_SAVE) {
-								if (option_field & OPTION_RANGE) {
-									if (linecount >= lowerrange && linecount <= upperrange) {
-										fprintf(savefile, "LINE %d, POS %d: ", linecount, counter+1);
-									}
-								}
-								else {
-									fprintf(savefile, "LINE %d, POS %d: ", linecount, counter+1);
-								}
-							}
-							else {
-								if (option_field & OPTION_RANGE) {
-									if (linecount >= lowerrange && linecount <= upperrange) {
-										printf("LINE %d, POS %d: ", linecount, counter+1);
-									}
-								}
-								else {
-									printf("LINE %d, POS %d: ", linecount, counter+1);
-								}
-							}
-						}
-						if (option_field & OPTION_SAVE) {
 							if (option_field & OPTION_RANGE) {
 								if (linecount >= lowerrange && linecount <= upperrange) {
-									fprintf(savefile, "%s", linebuff);
+									fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
 								}
 							}
 							else {
-								fprintf(savefile, "%s", linebuff);
+								fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
+							}
+						}
+						if (option_field & OPTION_RANGE) {
+							if (linecount >= lowerrange && linecount <= upperrange) {
+								fprintf(file_stream, "%s", linebuff);
 							}
 						}
 						else {
-							if (option_field & OPTION_RANGE) {
-								if (linecount >= lowerrange && linecount <= upperrange) {
-									printf("%s", linebuff);
-								}
-							}
-							else {
-								printf("%s", linebuff);
-							}
+							fprintf(file_stream, "%s", linebuff);
 						}
 					}
 					break;
@@ -250,96 +197,48 @@ int main(int argc, char *argv[])
 								if (option_field & OPTION_ISOLATE) {
 									if ((counter == 0 || linebuff[counter-1] == ' ') && (linebuff[counter+searchsize] == ' ' || linebuff[counter+searchsize] == '\n')) {
 										if (option_field & OPTION_LINES) {
-											if (option_field & OPTION_SAVE) {
-												if (option_field & OPTION_RANGE) {
-													if (linecount >= lowerrange && linecount <= upperrange) {
-														fprintf(savefile, "LINE %d, POS %d: ", linecount, counter+1);
-													}
-												}
-												else {
-													fprintf(savefile, "LINE %d, POS %d: ", linecount, counter+1);
-												}
-											}
-											else {
-												if (option_field & OPTION_RANGE) {
-													if (linecount >= lowerrange && linecount <= upperrange) {
-														printf("LINE %d, POS %d: ", linecount, counter+1);
-													}
-												}
-												else {
-													printf("LINE %d, POS %d: ", linecount, counter+1);
-												}
-											}
-										}
-										if (option_field & OPTION_SAVE) {
 											if (option_field & OPTION_RANGE) {
 												if (linecount >= lowerrange && linecount <= upperrange) {
-													fprintf(savefile, "%s", linebuff);
+													fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
 												}
 											}
 											else {
-												fprintf(savefile, "%s", linebuff);
+												fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
+											}
+										}
+										if (option_field & OPTION_RANGE) {
+											if (linecount >= lowerrange && linecount <= upperrange) {
+												fprintf(file_stream, "%s", linebuff);
 											}
 										}
 										else {
-											if (option_field & OPTION_RANGE) {
-												if (linecount >= lowerrange && linecount <= upperrange) {
-													printf("%s", linebuff);
-												}
-											}
-											else {
-												printf("%s", linebuff);
-											}
+											fprintf(file_stream, "%s", linebuff);
 										}
 									}
 								}
 								else {
 									if (option_field & OPTION_LINES) {
-										if (option_field & OPTION_SAVE) {
-											if (option_field & OPTION_RANGE) {
-												if (linecount >= lowerrange && linecount <= upperrange) {
-													fprintf(savefile, "LINE %d, POS %d: ", linecount, counter+1);
-												}
-											}
-											else {
-												fprintf(savefile, "LINE %d, POS %d: ", linecount, counter+1);
-											}
-										}
-										else {
-											if (option_field & OPTION_RANGE) {
-												if (linecount >= lowerrange && linecount <= upperrange) {
-													printf("LINE %d, POS %d: ", linecount, counter+1);
-												}
-											}
-											else {
-												printf("LINE %d, POS %d: ", linecount, counter+1);
-											}
-										}
-									}
-									if (option_field & OPTION_SAVE) {
 										if (option_field & OPTION_RANGE) {
 											if (linecount >= lowerrange && linecount <= upperrange) {
-												fprintf(savefile, "%s", linebuff);
+												fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
 											}
 										}
 										else {
-											fprintf(savefile, "%s", linebuff);
+											fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
+										}
+									}
+									if (option_field & OPTION_RANGE) {
+										if (linecount >= lowerrange && linecount <= upperrange) {
+											fprintf(file_stream, "%s", linebuff);
 										}
 									}
 									else {
-										if (option_field & OPTION_RANGE) {
-											if (linecount >= lowerrange && linecount <= upperrange) {
-												printf("%s", linebuff);
-											}
-										}
-										else {
-											printf("%s", linebuff);
-										}
+										fprintf(file_stream, "%s", linebuff);
 									}
 								}
 							}
 						}
-						/* If the characters don't match, we will break out
+						/* If the characters don't match, break out
 						 * of the for loop and continue searching through
 						 * linebuff with the first letter of our search term
 						 * (see above) */
@@ -350,19 +249,15 @@ int main(int argc, char *argv[])
 				}
 			}
 		}
-		/* Don't forget to increment linecount to keep track of every line
-		 * that we have gone through */
 		linecount++;
 	}
 
-	/* Wrap things up */
 	fclose(searchfile);
 	if (option_field & OPTION_SAVE) {
 		printf("Results written to %s\n", argv[saveposition]);
-		fclose(savefile);
+		fclose(file_stream);
 	}
 
-	/* Goodbye */
 	return 0;
 }
 
