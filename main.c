@@ -12,11 +12,11 @@
 #include<range.h>
 #include<nerror.h>
 
-#define OPTION_IGNORE 	1
-#define OPTION_ISOLATE 	2
-#define OPTION_LINES	4
-#define OPTION_RANGE	8
-#define OPTION_SAVE	16
+#define OPTION_IGNORE 	0b00000001
+#define OPTION_ISOLATE 	0b00000010
+#define OPTION_LINES	0b00000100
+#define OPTION_RANGE	0b00001000
+#define OPTION_SAVE	0b00010000
 
 int main(int argc, char *argv[])
 {
