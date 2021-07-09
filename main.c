@@ -133,88 +133,17 @@ int main(int argc, char *argv[])
 	while (fgets(linebuff, 1024, searchfile)) {
 		int counter;
 		for (counter = 0; counter < strlen(linebuff); counter++) {
-			/* If the first letter of our search term matches a letter in linebuff,
-			 * We first check to see if our search term is a single letter or not.
-			 * This is accomplished by checking whether or not the next position
-			 * is a null terminator*/
-			if (linebuff[counter] == searchword[0]) { //change this to use strcmp. That way, I can take out a fair chunk of code
-				if (searchword[1] == '\0') {
-					if (option_field & OPTION_ISOLATE) {
-						if ((counter == 0 || linebuff[counter-1] == ' ') && (linebuff[counter+1] == ' ' || linebuff[counter+1] == '\n')) {
-							if (option_field & OPTION_LINES) {
-								if (option_field & OPTION_RANGE) {
-									if (linecount >= lowerrange && linecount <= upperrange) {
-										fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
-									}
-								}
-								else {
-									fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
-								}
-						}
-							if (option_field & OPTION_RANGE) {
-								if (linecount >= lowerrange && linecount <= upperrange) {
-									fprintf(file_stream, "%s", linebuff);
-								}
-							}
-							else {
-								fprintf(file_stream, "%s", linebuff);
-							}
-						}
-					}
-					else {
-						if (option_field & OPTION_LINES) {
-							if (option_field & OPTION_RANGE) {
-								if (linecount >= lowerrange && linecount <= upperrange) {
-									fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
-								}
-							}
-							else {
-								fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
-							}
-						}
-						if (option_field & OPTION_RANGE) {
-							if (linecount >= lowerrange && linecount <= upperrange) {
-								fprintf(file_stream, "%s", linebuff);
-							}
-						}
-						else {
-							fprintf(file_stream, "%s", linebuff);
-						}
-					}
-					break;
-				}
-				/* If the search term is longer than one letter, we continue here */
-				else {
-					/* Using a for loop, we iterate through both the search word
-					 * and linebuff and check them against each other. If we get
-					 * to the end of our search word, we have found a match, so
-					 * we will print out our results */
-					for (int x = 1; x <= searchsize; x++) {
-						if (linebuff[counter+x] == searchword[x]) {
-							if (x == searchsize-1) {
-								if (option_field & OPTION_ISOLATE) {
-									if ((counter == 0 || linebuff[counter-1] == ' ') && (linebuff[counter+searchsize] == ' ' || linebuff[counter+searchsize] == '\n')) {
-										if (option_field & OPTION_LINES) {
-											if (option_field & OPTION_RANGE) {
-												if (linecount >= lowerrange && linecount <= upperrange) {
-													fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
-												}
-											}
-											else {
-												fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
-											}
-										}
-										if (option_field & OPTION_RANGE) {
-											if (linecount >= lowerrange && linecount <= upperrange) {
-												fprintf(file_stream, "%s", linebuff);
-											}
-										}
-										else {
-											fprintf(file_stream, "%s", linebuff);
-										}
-									}
-								}
-								else {
+			/* If the first letter matches, start comparing the characters
+			 * in searchword[]
+			 * */
+			if (linebuff[counter] == searchword[0]) {
+				for (int x = 0; x <= searchsize; x++) {
+					if (linebuff[counter+x] == searchword[x]) {
+						if (x == searchsize-1) {
+							/* Test to see which options shall be employed
+							 * */
+							if (option_field & OPTION_ISOLATE) {
+								if ((counter == 0 || linebuff[counter-1] == ' ') && (linebuff[counter+searchsize] == ' ' || linebuff[counter+searchsize] == '\n')) {
 									if (option_field & OPTION_LINES) {
 										if (option_field & OPTION_RANGE) {
 											if (linecount >= lowerrange && linecount <= upperrange) {
@@ -235,14 +164,32 @@ int main(int argc, char *argv[])
 									}
 								}
 							}
+							else {
+								if (option_field & OPTION_LINES) {
+									if (option_field & OPTION_RANGE) {
+										if (linecount >= lowerrange && linecount <= upperrange) {
+											fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
+										}
+									}
+									else {
+										fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
+									}
+								}
+								if (option_field & OPTION_RANGE) {
+									if (linecount >= lowerrange && linecount <= upperrange) {
+										fprintf(file_stream, "%s", linebuff);
+									}
+								}
+								else {
+									fprintf(file_stream, "%s", linebuff);
+								}
+							}
 						}
-						/* If the characters don't match, break out
-						 * of the for loop and continue searching through
-						 * linebuff with the first letter of our search term
-						 * (see above) */
-						else {
-							break;
-						}
+					}
+					/* If the characters don't match, break
+					 * */
+					else {
+						break;
 					}
 				}
 			}
