@@ -8,15 +8,16 @@
 #include<stdlib.h>
 #include<stdint.h>
 #include<string.h>
+#include<ctype.h>
 
 #include<range.h>
 #include<nerror.h>
 
-#define OPTION_IGNORE 	0b00000001
-#define OPTION_ISOLATE 	0b00000010
-#define OPTION_LINES	0b00000100
-#define OPTION_RANGE	0b00001000
-#define OPTION_SAVE	0b00010000
+#define OPTION_IGNORE 	1	// 0b00000001
+#define OPTION_ISOLATE 	2	// 0b00000010
+#define OPTION_LINES	4	// 0b00000100
+#define OPTION_RANGE	8	// 0b00001000
+#define OPTION_SAVE	16	// 0b00010000
 
 int main(int argc, char *argv[])
 {
@@ -58,7 +59,6 @@ int main(int argc, char *argv[])
 		/* If -l or --lines is specified, lflag is given the value of 1 */
 		if (strcmp(argv[flagcheck], "-i") == 0 || strcmp(argv[flagcheck], "--ignore-case") == 0) {
 			FAIL_IF_R(option_field & OPTION_IGNORE, 1, stderr, "ERROR: You can only employ a flag once\n");
-			puts("ignoring cases is not yet implemented");
 			option_field ^= OPTION_IGNORE;
 		}
 
@@ -82,14 +82,14 @@ int main(int argc, char *argv[])
 		else if (strcmp(argv[flagcheck], "-s") == 0 || strcmp(argv[flagcheck], "--save") == 0) {
 			FAIL_IF_R(option_field & OPTION_SAVE, 1, stderr, "ERROR: You can only employ a flag once\n");
 			FAIL_IF_R(flagcheck + 1 == argc - 2, 1, stderr, "ERROR: File not specified\n");
-			flagcheck++;
+			flagcheck++; // Increment flagcheck so that the save position is not checked as an option
 			saveposition = flagcheck;
 			option_field ^= OPTION_SAVE;
 		}
 		else if (strcmp(argv[flagcheck], "-r") == 0 || strcmp(argv[flagcheck], "--range") == 0) {
 			FAIL_IF_R(option_field & OPTION_RANGE, 1, stderr, "ERROR: You can only employ a flag once\n");
 			FAIL_IF_R(flagcheck + 1 == argc - 2, 1, stderr, "ERROR: Range not specified\n");
-			flagcheck++;
+			flagcheck++; // Increment flagcheck so that the range position is not checked as an option
 			rangeposition = flagcheck;
 			option_field ^= OPTION_RANGE;
 		}
@@ -136,11 +136,11 @@ int main(int argc, char *argv[])
 			/* If the first letter matches, start comparing the characters
 			 * in searchword[]
 			 * */
-			if (linebuff[counter] == searchword[0]) {
+			if ((linebuff[counter] == searchword[0]) || ((option_field & OPTION_IGNORE) && (toupper(linebuff[counter]) == toupper(searchword[0])))) {
 				for (int x = 0; x <= searchsize; x++) {
-					if (linebuff[counter+x] == searchword[x]) {
+					if ((linebuff[counter+x] == searchword[x]) || ((option_field & OPTION_IGNORE) && (toupper(linebuff[counter+x]) == toupper(searchword[x])))) {
 						if (x == searchsize-1) {
-							/* Test to see which options shall be employed
+							/* Test to see which other options shall be employed
 							 * */
 							if (option_field & OPTION_ISOLATE) {
 								if ((counter == 0 || linebuff[counter-1] == ' ') && (linebuff[counter+searchsize] == ' ' || linebuff[counter+searchsize] == '\n')) {
