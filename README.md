@@ -1,4 +1,4 @@
-Search
+Search help:
         USAGE: search [OPTION]... TERM FILE
 
         -h, --help              Show this help dialog
@@ -18,6 +18,11 @@ Search
                                 given range of lines in the file.
                                 Used in the format of num-num.
                                 EG: -r 50-75
+
+        -R, --remove-dupes      Only shows the a line once
+                                regardless of how many times the
+                                search term appears in the line.
+                                Not yet implemented.
 
         -s, --save              Save results to a file
 
