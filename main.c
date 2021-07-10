@@ -17,13 +17,14 @@
 #define OPTION_ISOLATE 	2	// 0b00000010
 #define OPTION_LINES	4	// 0b00000100
 #define OPTION_RANGE	8	// 0b00001000
-#define OPTION_SAVE	16	// 0b00010000
+#define OPTION_REMOVE	16	// 0b00010000
+#define OPTION_SAVE	32	// 0b00100000
 
 int main(int argc, char *argv[])
 {
 	/* If the arg count is less than 3, we look to see if -h or --help
-	 * has been invoked. If yes, the help menu is displayed. If no,
-	 * we get an error that is sent to standard error */
+	 * has been invoked
+	 * */
 	if (argc < 3) {
 		FAIL_IF_R(argc == 1, 1, stderr, "Usage: search [OPTION]... TERM FILE\nTry 'search --help' for more information\n");
 		
@@ -34,6 +35,7 @@ int main(int argc, char *argv[])
 			puts("\t-I, --isolate\t\tOnly return a word where it is\n\t\t\t\tan exact match, ie, not part of\n\t\t\t\ta compound word or hyphenated\n\t\t\t\tword.\n");
 			puts("\t-l, --lines\t\tDisplay line numbers in results\n\t\t\t\tand the position of the start of\n\t\t\t\tthe word\n");
 			puts("\t-r, --range\t\tDisplay results only from a\n\t\t\t\tgiven range of lines in the file.\n\t\t\t\tUsed in the format of num-num.\n\t\t\t\tEG: -r 50-75\n");
+			puts("\t-R, --remove-dupes\tOnly shows the a line once\n\t\t\t\tregardless of how many times the\n\t\t\t\tsearch term appears in the line.\n\t\t\t\tNot yet implemented.\n");
 			puts("\t-s, --save\t\tSave results to a file\n");
 			puts("\tSearch is able to be used with other programms.\n\tTry piping the results of search into\n\tgrep to narrow down search results\n");
 			puts("\tEG: search Port /etc/ssh/sshd_config | grep 22");
@@ -93,6 +95,10 @@ int main(int argc, char *argv[])
 			rangeposition = flagcheck;
 			option_field ^= OPTION_RANGE;
 		}
+		else if (strcmp(argv[flagcheck], "-R") == 0 || strcmp(argv[flagcheck], "--remove-dupes") == 0) {
+			FAIL_IF_R(option_field & OPTION_REMOVE, 1, stderr, "ERROR: You can only employ a flag once\n");
+			option_field ^= OPTION_REMOVE;
+		}
 		else {
 			fprintf(stderr, "\nERROR: \"%s\" is not a valid option\n\n", argv[flagcheck]);
 			return 1;
@@ -119,6 +125,8 @@ int main(int argc, char *argv[])
 	strcpy(searchword, argv[argc-2]);
 	char linebuff[1024];
 	int linecount = 1;
+	int dupecountline = 0;
+	int dupecountmain = 0;
 
 	/* Get the left and right values from range and sort into the correct variables */
 	int lowerrange = getleftvalue(argv[rangeposition]);
@@ -128,7 +136,14 @@ int main(int argc, char *argv[])
 		upperrange = lowerrange;
 		lowerrange = intholder;
 	}
-	printf("Searching for \"%s\" in %s\n", argv[argc-2], argv[argc-1]);
+	fprintf(stderr, "Searching for \"%s\" in %s\n", argv[argc-2], argv[argc-1]);
+	if (option_field & OPTION_ISOLATE) fprintf(stderr, "Isolating...\n");
+	if (option_field & OPTION_IGNORE) fprintf(stderr, "Ignoring cases...\n");
+	if (option_field & OPTION_LINES) fprintf(stderr, "Including line numbers...\n");
+	if (option_field & OPTION_REMOVE) fprintf(stderr, "Removing duplicate lines...\n");
+	if (option_field & OPTION_RANGE) fprintf(stderr, "Showing results in a range of %s...\n", argv[rangeposition]);
+	if (option_field & OPTION_SAVE) fprintf(stderr, "Saving results to %s...\n", argv[saveposition]);
+	else fputc('\n', stderr);
 
 	while (fgets(linebuff, 1024, searchfile)) {
 		int counter;
@@ -147,20 +162,52 @@ int main(int argc, char *argv[])
 									if (option_field & OPTION_LINES) {
 										if (option_field & OPTION_RANGE) {
 											if (linecount >= lowerrange && linecount <= upperrange) {
-												fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
+												if (option_field & OPTION_REMOVE) {
+													if (dupecountline == 0) {
+														fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
+														dupecountline++;
+													}
+												}
+												else {
+													fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
+												}
 											}
 										}
 										else {
-											fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
+											if (option_field & OPTION_REMOVE) {
+												if (dupecountline == 0) {
+													fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
+													dupecountline++;
+												}
+											}
+											else {
+												fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
+											}
 										}
 									}
 									if (option_field & OPTION_RANGE) {
 										if (linecount >= lowerrange && linecount <= upperrange) {
-											fprintf(file_stream, "%s", linebuff);
+											if (option_field & OPTION_REMOVE) {
+												if (dupecountmain == 0) {
+													fprintf(file_stream, "%s", linebuff);
+													dupecountmain++;
+												}
+											}
+											else {
+												fprintf(file_stream, "%s", linebuff);
+											}
 										}
 									}
 									else {
-										fprintf(file_stream, "%s", linebuff);
+										if (option_field & OPTION_REMOVE) {
+											if (dupecountmain == 0) {
+												fprintf(file_stream, "%s", linebuff);
+												dupecountmain++;
+											}
+										}
+										else {
+											fprintf(file_stream, "%s", linebuff);
+										}
 									}
 								}
 							}
@@ -168,20 +215,52 @@ int main(int argc, char *argv[])
 								if (option_field & OPTION_LINES) {
 									if (option_field & OPTION_RANGE) {
 										if (linecount >= lowerrange && linecount <= upperrange) {
-											fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
+											if (option_field & OPTION_REMOVE) {
+												if (dupecountline == 0) {
+													fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
+													dupecountline++;
+												}
+											}
+											else {
+												fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
+											}
 										}
 									}
 									else {
-										fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
+										if (option_field & OPTION_REMOVE) {
+											if (dupecountline == 0) {
+												fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
+												dupecountline++;
+											}
+										}
+										else {
+											fprintf(file_stream, "LINE %d, POS %d: ", linecount, counter+1);
+										}
 									}
 								}
 								if (option_field & OPTION_RANGE) {
 									if (linecount >= lowerrange && linecount <= upperrange) {
-										fprintf(file_stream, "%s", linebuff);
+										if (option_field & OPTION_REMOVE) {
+											if (dupecountmain == 0) {
+												fprintf(file_stream, "%s", linebuff);
+												dupecountmain++;
+											}
+										}
+										else {
+											fprintf(file_stream, "%s", linebuff);
+										}
 									}
 								}
 								else {
-									fprintf(file_stream, "%s", linebuff);
+									if (option_field & OPTION_REMOVE) {
+										if (dupecountmain == 0) {
+											fprintf(file_stream, "%s", linebuff);
+											dupecountmain++;
+										}
+									}
+									else {
+										fprintf(file_stream, "%s", linebuff);
+									}
 								}
 							}
 						}
@@ -194,12 +273,13 @@ int main(int argc, char *argv[])
 				}
 			}
 		}
+		dupecountmain = dupecountline = 0;
 		linecount++;
 	}
 
 	fclose(searchfile);
 	if (option_field & OPTION_SAVE) {
-		printf("Results written to %s\n", argv[saveposition]);
+		printf("Results written to %s...\n", argv[saveposition]);
 		fclose(file_stream);
 	}
 
