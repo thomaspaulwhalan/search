@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
 	/* If the arg count is less than 3, we look to see if -h or --help has been invoked
 	 * */
 	if (argc < 3) {
-		FAIL_IF_R(argc == 1, 1, stderr, "Usage: search [OPTION]... TERM FILE\nTry 'search --help' for more information\n");
+		FAIL_IF_R_M(argc == 1, 1, stderr, "Usage: search [OPTION]... TERM FILE\nTry 'search --help' for more information\n");
 		
 		if (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0) {
 			puts("Search help:\n\tUSAGE: search [OPTION]... TERM FILE\n");
@@ -59,17 +59,17 @@ int main(int argc, char *argv[])
 	for (int flagcheck = 1; flagcheck < argc-2; flagcheck++) {
 		/* If -l or --lines is specified, lflag is given the value of 1 */
 		if (strcmp(argv[flagcheck], "-i") == 0 || strcmp(argv[flagcheck], "--ignore-case") == 0) {
-			FAIL_IF_R(option_field & OPTION_IGNORE, 1, stderr, "ERROR: You can only employ a flag once\n");
+			FAIL_IF_R_M(option_field & OPTION_IGNORE, 1, stderr, "ERROR: You can only employ a flag once\n");
 			option_field ^= OPTION_IGNORE;
 		}
 
 		else if (strcmp(argv[flagcheck], "-I") == 0 || strcmp(argv[flagcheck], "--isolate") == 0) {
-			FAIL_IF_R(option_field & OPTION_ISOLATE, 1, stderr, "ERROR: You can only employ a flag once\n");
+			FAIL_IF_R_M(option_field & OPTION_ISOLATE, 1, stderr, "ERROR: You can only employ a flag once\n");
 			option_field ^= OPTION_ISOLATE;
 		}
 
 		else if (strcmp(argv[flagcheck], "-l") == 0 || strcmp(argv[flagcheck], "--lines") == 0) {
-			FAIL_IF_R(option_field & OPTION_LINES, 1, stderr, "ERROR: You can only employ a flag once\n");
+			FAIL_IF_R_M(option_field & OPTION_LINES, 1, stderr, "ERROR: You can only employ a flag once\n");
 			option_field ^= OPTION_LINES;
 		}
 		/* if -h or --help is specified, we let the user know that we would rather
@@ -81,21 +81,21 @@ int main(int argc, char *argv[])
 			return 1;
 		}
 		else if (strcmp(argv[flagcheck], "-s") == 0 || strcmp(argv[flagcheck], "--save") == 0) {
-			FAIL_IF_R(option_field & OPTION_SAVE, 1, stderr, "ERROR: You can only employ a flag once\n");
-			FAIL_IF_R(flagcheck + 1 == argc - 2, 1, stderr, "ERROR: File not specified\n");
+			FAIL_IF_R_M(option_field & OPTION_SAVE, 1, stderr, "ERROR: You can only employ a flag once\n");
+			FAIL_IF_R_M(flagcheck + 1 == argc - 2, 1, stderr, "ERROR: File not specified\n");
 			flagcheck++; // Increment flagcheck so that the save position is not checked as an option
 			saveposition = flagcheck;
 			option_field ^= OPTION_SAVE;
 		}
 		else if (strcmp(argv[flagcheck], "-r") == 0 || strcmp(argv[flagcheck], "--range") == 0) {
-			FAIL_IF_R(option_field & OPTION_RANGE, 1, stderr, "ERROR: You can only employ a flag once\n");
-			FAIL_IF_R(flagcheck + 1 == argc - 2, 1, stderr, "ERROR: Range not specified\n");
+			FAIL_IF_R_M(option_field & OPTION_RANGE, 1, stderr, "ERROR: You can only employ a flag once\n");
+			FAIL_IF_R_M(flagcheck + 1 == argc - 2, 1, stderr, "ERROR: Range not specified\n");
 			flagcheck++; // Increment flagcheck so that the range position is not checked as an option
 			rangeposition = flagcheck;
 			option_field ^= OPTION_RANGE;
 		}
 		else if (strcmp(argv[flagcheck], "-R") == 0 || strcmp(argv[flagcheck], "--remove-dupes") == 0) {
-			FAIL_IF_R(option_field & OPTION_REMOVE, 1, stderr, "ERROR: You can only employ a flag once\n");
+			FAIL_IF_R_M(option_field & OPTION_REMOVE, 1, stderr, "ERROR: You can only employ a flag once\n");
 			option_field ^= OPTION_REMOVE;
 		}
 		else {
@@ -105,12 +105,12 @@ int main(int argc, char *argv[])
 	}
 
 	FILE *searchfile = searchfile = fopen(argv[argc-1], "r");
-	FAIL_IF_R(searchfile == NULL, 1, stderr, "search: Could not open search file\n");
+	FAIL_IF_R_M(searchfile == NULL, 1, stderr, "search: Could not open search file\n");
 
 	FILE *file_stream;
 	if (option_field & OPTION_SAVE) {
 		file_stream = fopen(argv[saveposition], "w");
-		FAIL_IF_R(file_stream == NULL, 1, stderr, "search: Could not open save file\n");
+		FAIL_IF_R_M(file_stream == NULL, 1, stderr, "search: Could not open save file\n");
 	}
 	else {
 		file_stream = stdout;
