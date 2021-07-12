@@ -22,8 +22,7 @@
 
 int main(int argc, char *argv[])
 {
-	/* If the arg count is less than 3, we look to see if -h or --help
-	 * has been invoked
+	/* If the arg count is less than 3, we look to see if -h or --help has been invoked
 	 * */
 	if (argc < 3) {
 		FAIL_IF_R(argc == 1, 1, stderr, "Usage: search [OPTION]... TERM FILE\nTry 'search --help' for more information\n");
@@ -127,6 +126,7 @@ int main(int argc, char *argv[])
 	int linecount = 1;
 	int dupecountline = 0;
 	int dupecountmain = 0;
+	unsigned int resultstracker = 0;
 
 	/* Get the left and right values from range and sort into the correct variables */
 	int lowerrange = getleftvalue(argv[rangeposition]);
@@ -191,10 +191,12 @@ int main(int argc, char *argv[])
 												if (dupecountmain == 0) {
 													fprintf(file_stream, "%s", linebuff);
 													dupecountmain++;
+													resultstracker++;
 												}
 											}
 											else {
 												fprintf(file_stream, "%s", linebuff);
+												resultstracker++;
 											}
 										}
 									}
@@ -203,10 +205,12 @@ int main(int argc, char *argv[])
 											if (dupecountmain == 0) {
 												fprintf(file_stream, "%s", linebuff);
 												dupecountmain++;
+												resultstracker++;
 											}
 										}
 										else {
 											fprintf(file_stream, "%s", linebuff);
+											resultstracker++;
 										}
 									}
 								}
@@ -244,10 +248,12 @@ int main(int argc, char *argv[])
 											if (dupecountmain == 0) {
 												fprintf(file_stream, "%s", linebuff);
 												dupecountmain++;
+												resultstracker++;
 											}
 										}
 										else {
 											fprintf(file_stream, "%s", linebuff);
+											resultstracker++;
 										}
 									}
 								}
@@ -256,31 +262,35 @@ int main(int argc, char *argv[])
 										if (dupecountmain == 0) {
 											fprintf(file_stream, "%s", linebuff);
 											dupecountmain++;
+											resultstracker++;
 										}
 									}
 									else {
 										fprintf(file_stream, "%s", linebuff);
+										resultstracker++;
 									}
 								}
 							}
 						}
 					}
-					/* If the characters don't match, break
-					 * */
 					else {
 						break;
 					}
 				}
 			}
 		}
+		
 		dupecountmain = dupecountline = 0;
 		linecount++;
 	}
 
 	fclose(searchfile);
 	if (option_field & OPTION_SAVE) {
-		printf("Results written to %s...\n", argv[saveposition]);
+		fprintf(stderr, "%u results written to %s...\n", resultstracker, argv[saveposition]);
 		fclose(file_stream);
+	}
+	else {
+		fprintf(stderr, "\n%u results written to stdout\n", resultstracker);
 	}
 
 	return 0;
