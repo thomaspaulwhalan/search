@@ -10,4 +10,4 @@ search: main.c range.o
 	$(CC) $(CFLAGS) main.c range.o -o search
 
 clean:
-	rm search range.o
+	rm range.o
