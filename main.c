@@ -33,9 +33,9 @@ int main(int argc, char *argv[])
 			puts("\t-i, --ignore-case\tSearch is not case sensitive\n");
 			puts("\t-I, --isolate\t\tOnly return a word where it is\n\t\t\t\tan exact match, ie, not part of\n\t\t\t\ta compound word or hyphenated\n\t\t\t\tword.\n");
 			puts("\t-l, --lines\t\tDisplay line numbers in results\n\t\t\t\tand the position of the start of\n\t\t\t\tthe word\n");
-			puts("\t-r, --range\t\tDisplay results only from a\n\t\t\t\tgiven range of lines in the file.\n\t\t\t\tUsed in the format of num-num.\n\t\t\t\tEG: -r 50-75\n");
+			puts("\t-r, --range RANGE\tDisplay results only from a\n\t\t\t\tgiven range of lines in the file.\n\t\t\t\tUsed in the format of num-num.\n\t\t\t\tEG: -r 50-75\n");
 			puts("\t-R, --remove-dupes\tOnly shows the a line once\n\t\t\t\tregardless of how many times the\n\t\t\t\tsearch term appears in the line.\n\t\t\t\tNot yet implemented.\n");
-			puts("\t-s, --save\t\tSave results to a file\n");
+			puts("\t-s, --save FILE\t\tSave results to a file\n");
 			puts("\tSearch is able to be used with other programms.\n\tTry piping the results of search into\n\tgrep to narrow down search results\n");
 			puts("\tEG: search Port /etc/ssh/sshd_config | grep 22");
 
