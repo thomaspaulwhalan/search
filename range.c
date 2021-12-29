@@ -9,8 +9,8 @@
 
 int getleftvalue(char *args)
 {
-	int leftvalue;
-	char range[16];
+	int leftvalue = 0;
+	char range[16] = "";
 
 	for (int x = 0; x < strlen(args); x++) {
 		if (args[x] == '-') {
@@ -27,8 +27,8 @@ int getleftvalue(char *args)
 
 int getrightvalue(char *args)
 {
-	int rightvalue;
-	char range[16];
+	int rightvalue = 0;
+	char range[16] = "";
 	int flip = 0;
 
 	int y = 0;
